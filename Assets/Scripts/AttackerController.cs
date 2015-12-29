@@ -10,6 +10,7 @@ public class AttackerController : MonoBehaviour {
 
 	public Dropdown actionDirection;
 	public Dropdown action;
+	public Transform target;
 
 	// Use this for initialization
 	void Start () {
@@ -33,11 +34,17 @@ public class AttackerController : MonoBehaviour {
 		) {
 			action.value = 0;
 			anim.SetInteger ("Action", 0);
+
+//			transform.position.
+			transform.position = new Vector3 (0f, 0f, -1.2f);
 		}
+
+//		transform.Rotate (new Vector3 (0, 50, 0));
+
 	}
 
 	void LateUpdate() {
-//		transform.Translate(0, 0, Time.deltaTime * 1);
+		transform.LookAt (target);
 	}
 
 	public void onChangeDirection() {
