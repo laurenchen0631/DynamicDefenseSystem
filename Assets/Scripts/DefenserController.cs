@@ -75,6 +75,13 @@ public class DefenserController : MonoBehaviour {
 		}
 	}
 
+	void FixedUpdate() {
+		if (Input.GetKeyUp (KeyCode.R)) {
+			toggleRecord ();
+			Debug.Log ("test");
+		}
+	}
+
 	public void toggleRecord() {
 		if (isRecording) {
 			record.image.color =  Color.white;
@@ -99,29 +106,13 @@ public class DefenserController : MonoBehaviour {
 
 	void OnCollisionEnter(Collision collision) {
 		Debug.Log ("hit");
-		// Debug-draw all contact points and normals
-//		foreach (ContactPoint contact in collision.contacts) {
-//			Debug.DrawRay(contact.point, contact.normal, Color.white);
-//		}
-//
-//		// Play a sound if the colliding objects had a big impact.		
-//		if (collision.relativeVelocity.magnitude > 2)
-//			audio.Play();
 
 	}
 
 	void OnControllerColliderHit(ControllerColliderHit hit) {
 		Debug.Log ("hit");
 
-//		Rigidbody body = hit.collider.attachedRigidbody;
-//		if (body == null || body.isKinematic)
-//			return;
-//
-//		if (hit.moveDirection.y < -0.3F)
-//			return;
-//
-//		Vector3 pushDir = new Vector3(hit.moveDirection.x, 0, hit.moveDirection.z);
-//		body.velocity = pushDir * pushPower;
+
 	}
 
 	private void attackPathAnalysis() {

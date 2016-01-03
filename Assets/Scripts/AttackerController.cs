@@ -80,6 +80,10 @@ public class AttackerController : MonoBehaviour {
 //		transform.LookAt (target);
 	}
 
+//	void OnControllerColliderHit(ControllerColliderHit hit) {
+//		Debug.Log ("hit");
+//	}
+
 	public void onChangeDirection() {
 		if (actionDirection.value == 0) {
 			anim.SetBool ("Left", true);
