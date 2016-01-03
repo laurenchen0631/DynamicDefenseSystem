@@ -29,22 +29,55 @@ public class AttackerController : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 		if (
-			anim.IsInTransition(0) &&
-			anim.GetNextAnimatorStateInfo(0).fullPathHash == Animator.StringToHash ("Base Layer.Idle")
+			anim.IsInTransition (0) &&
+			anim.GetNextAnimatorStateInfo (0).fullPathHash == Animator.StringToHash ("Base Layer.Idle")
 		) {
 			action.value = 0;
 			anim.SetInteger ("Action", 0);
+		}
+	}
 
-//			transform.position.
-			transform.position = new Vector3 (0f, 0f, -1.2f);
+	void FixedUpdate() {
+		if (anim.GetInteger ("Action") != 0) {
+			return;
 		}
 
-//		transform.Rotate (new Vector3 (0, 50, 0));
+		if (Input.GetKey (KeyCode.Q)) {
+			actionDirection.value = 0;
+			anim.SetBool ("Left", true);
+			anim.SetBool ("Right", false);
+		} else if  (Input.GetKey (KeyCode.E)) {
+			actionDirection.value = 1;
+			anim.SetBool ("Left", false);
+			anim.SetBool ("Right", true);
+		}
 
+		if (Input.GetKey (KeyCode.B)) {
+			action.value = 1;
+			anim.SetInteger ("Action", 1);
+		} else if (Input.GetKey (KeyCode.N)) {
+			action.value = 2;
+			anim.SetInteger ("Action", 2);
+		} else if (Input.GetKey (KeyCode.M)) {
+			action.value = 3;
+			anim.SetInteger ("Action", 3);
+		} else if (Input.GetKey (KeyCode.Comma)) {
+			action.value = 4;
+			anim.SetInteger ("Action", 4);
+		} else if (Input.GetKey (KeyCode.H)) {
+			action.value = 5;
+			anim.SetInteger ("Action", 5);
+		} else if (Input.GetKey (KeyCode.J)) {
+			action.value = 6;
+			anim.SetInteger ("Action", 6);
+		} else if (Input.GetKey (KeyCode.K)) {
+			action.value = 7;
+			anim.SetInteger ("Action", 7);
+		}
 	}
 
 	void LateUpdate() {
-		transform.LookAt (target);
+//		transform.LookAt (target);
 	}
 
 	public void onChangeDirection() {
