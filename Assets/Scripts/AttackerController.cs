@@ -12,6 +12,8 @@ public class AttackerController : MonoBehaviour {
 	public Dropdown action;
 	public Transform target;
 
+	public bool isAttacking = false;
+
 	// Use this for initialization
 	void Start () {
 		anim = GetComponent<Animator> ();
@@ -34,6 +36,11 @@ public class AttackerController : MonoBehaviour {
 		) {
 			action.value = 0;
 			anim.SetInteger ("Action", 0);
+			isAttacking = false;
+		}
+
+		if (transform.position.y != 0f) {
+			transform.position = new Vector3 (transform.position.x, 0f, transform.position.z);
 		}
 	}
 
@@ -55,24 +62,31 @@ public class AttackerController : MonoBehaviour {
 		if (Input.GetKey (KeyCode.B)) {
 			action.value = 1;
 			anim.SetInteger ("Action", 1);
+			isAttacking = true;
 		} else if (Input.GetKey (KeyCode.N)) {
 			action.value = 2;
 			anim.SetInteger ("Action", 2);
+			isAttacking = true;
 		} else if (Input.GetKey (KeyCode.M)) {
 			action.value = 3;
 			anim.SetInteger ("Action", 3);
+			isAttacking = true;
 		} else if (Input.GetKey (KeyCode.Comma)) {
 			action.value = 4;
 			anim.SetInteger ("Action", 4);
+			isAttacking = true;
 		} else if (Input.GetKey (KeyCode.H)) {
 			action.value = 5;
 			anim.SetInteger ("Action", 5);
+			isAttacking = true;
 		} else if (Input.GetKey (KeyCode.J)) {
 			action.value = 6;
 			anim.SetInteger ("Action", 6);
+			isAttacking = true;
 		} else if (Input.GetKey (KeyCode.K)) {
 			action.value = 7;
 			anim.SetInteger ("Action", 7);
+			isAttacking = true;
 		}
 	}
 
