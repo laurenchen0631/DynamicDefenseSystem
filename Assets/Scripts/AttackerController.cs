@@ -38,7 +38,7 @@ public class AttackerController : MonoBehaviour {
 			anim.SetInteger ("Action", 0);
 			isAttacking = false;
 		}
-
+			
 		if (transform.position.y != 0f) {
 			transform.position = new Vector3 (transform.position.x, 0f, transform.position.z);
 		}

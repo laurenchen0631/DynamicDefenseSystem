@@ -28,14 +28,14 @@ public enum DenfenseAction {
 
 	// Block left
 	DodgeRight, // in 18-46 frame
-	DuckRight, // in 20-40 frame
+//	DuckRight, // in 20-40 frame
 	BlockLeftHigh, // in 24-32 frame
 	BlockLeftMiddle, // in 20-36 frame
 	BlockLeftLow,  // in 24-37 frame
 
 	// Block right
 	DodgeLeft, // in 18-46 frame
-	DuckLeft, // in 30-50 frame
+//	DuckLeft, // in 30-50 frame
 	BlockRightHigh, // 19-40
 	BlockRightMiddle, // 24-30
 	BlockRightLow, // 30 - 46
@@ -56,6 +56,9 @@ public class DefenserController : MonoBehaviour {
 
 	public Transform defenseOrigin;
 	public float defenseThreshold = 0.025f;
+	public float sideThreshold = 0.1f;
+	public float centerThreshold = 0.1f;
+
 	protected List<Joint[]> bones = new List<Joint[]>();
 	protected bool hasHitPoint = false;
 	protected Vector3 hitPoint;
@@ -99,7 +102,7 @@ public class DefenserController : MonoBehaviour {
 	}
 
 	void FixedUpdate() {
-		if (Input.GetKeyUp (KeyCode.R)) {
+		if (Input.GetKeyDown (KeyCode.R)) {
 			toggleRecord ();
 		}
 	}
@@ -124,7 +127,7 @@ public class DefenserController : MonoBehaviour {
 
 	private void startAnalysis() {
 		attackPathAnalysis ();
-		defenseStrategyAnalysis ();
+//		defenseStrategyAnalysis ();
 	}
 
 	void OnCollisionEnter(Collision hit) {
@@ -148,24 +151,78 @@ public class DefenserController : MonoBehaviour {
 		
 	private void attackPathAnalysis() {
 
-//		for (int i = 1; i < bones.Count; i++) {
-//			Debug.DrawLine (bones [i-1] [7].position, bones [i] [7].position, Color.red, 60);
-//		}
+		// Too few recorded frames
+		if (bones.Count < 3) {
+			return;
+		}
 
 		int lastIndex = 0;
-		Direction side = Direction.Left;
+		Direction attackSide = Direction.Left;
 
 		// 1. Find enemy attack from right or left
-		findAttackPart (ref lastIndex, ref side); //If find acttacker side, hasHitPoint muse be true;
+		findAttackPart (ref lastIndex, ref attackSide); //If find acttacker side, hasHitPoint muse be true;
 		if (!hasHitPoint) {
 			return;
 		}
 
-//		int jointsIndex = side == Direction.Left ? 7 : 11;
 		Debug.Log ("The " + lastIndex + "th frame recorded in total " + bones.Count + " frames.");
-		Debug.Log ("Attacked by " + side + " hand.");
+		Debug.Log ("Attacked by " + attackSide + " hand.");
 
-		// 2. Find the coordinate that attacked. (coordinate origin is ???)
+		// 2. Find the coordinate that attacked. (coordinate origin is defenseOrigin)
+
+		int jointsIndex = attackSide == Direction.Left ? 7 : 11;
+		Vector3 firstPoint = defenseOrigin.InverseTransformPoint (bones [0] [jointsIndex].position);
+//		Vector3 middlePoint = defenseOrigin.InverseTransformPoint (bones [Mathf.FloorToInt(lastIndex / 2f)] [jointsIndex].position);
+		Vector3 lastPoint = defenseOrigin.InverseTransformPoint (hitPoint);
+
+
+		Direction side = Direction.Middle;
+		Direction height = Direction.Center;
+
+		if (
+			firstPoint.y < -centerThreshold 
+		) {
+			height = Direction.Lower;
+		} else if (
+			firstPoint.y > centerThreshold 
+		) {
+			height = Direction.Upper;
+		}
+
+		if (
+			firstPoint.x < -sideThreshold
+		) {
+			side = Direction.Left;
+		} else if (
+			firstPoint.x > sideThreshold
+		) {
+			side = Direction.Right;
+		}
+
+		Debug.Log (getPosition (firstPoint));
+//		Debug.Log (side.ToString ());
+
+		defenseStrategyAnalysis (side, height);
+
+		// if isAbove choose high 
+		// if isBelow choose low
+		// else choose middle
+
+
+		// if isRight choose right 
+		// if isLeft choose left
+		// else choose middle 
+		
+//		Debug.Log (getPosition (firstPoint));
+//		Debug.Log (getPosition (middlePoint));
+//		Debug.Log (getPosition (lastPoint));
+
+//		Debug.DrawLine (defenseOrigin.position + firstPoint, defenseOrigin.position + middlePoint, Color.blue, 60f);
+		Debug.DrawLine (defenseOrigin.position + firstPoint, defenseOrigin.position + lastPoint, Color.blue, 60f);
+
+//		for (int i = 0; i < lastIndex; i++) {
+			
+//		}
 
 		// 3. Find the parts that will be attacked.
 
@@ -175,8 +232,6 @@ public class DefenserController : MonoBehaviour {
 		
 		if (hasHitPoint) {
 			float min = float.MaxValue;
-//			Debug.Log ("Contact Point: " + getPosition (hitPoint));
-
 			for (int i = 0; i < bones.Count; i++) {
 				float leftHand2Contact = Vector3.Distance (bones [i] [7].position, hitPoint);
 				float rightHand2Contact = Vector3.Distance (bones [i] [11].position, hitPoint);
@@ -188,15 +243,8 @@ public class DefenserController : MonoBehaviour {
 					dir = leftHand2Contact > rightHand2Contact ? Direction.Right : Direction.Left;
 				}
 			}
-
-//			int jointsIndex = side == Direction.Left ? 7 : 11;
-//			Debug.Log ("close point: " + getPosition ( bones [lastIndex] [jointsIndex].position));
-//			Debug.Log ("The " + lastIndex + "th frame recorded in total " + bones.Count + " frames.");
-//			Debug.Log (side);
 		} else {
 			float min = defenseThreshold;
-//			int lastIndex = 0;
-//			Direction side = Direction.Left;
 
 			for (int i = 1; i < bones.Count; i++) {
 
@@ -211,9 +259,6 @@ public class DefenserController : MonoBehaviour {
 					)
 				) {
 					if (leftHandHit.collider.tag == "Defenser") {
-//						Debug.Log (leftHandHit.collider.name);
-//						Debug.Log (getPosition (leftHandHit.point));
-//						Debug.DrawLine (bones [i] [7].position, leftHandHit.point, Color.red, 60);
 						leftHandDistance = Vector3.Distance (leftHandHit.point, bones [i] [7].position);
 					}
 				}
@@ -229,9 +274,6 @@ public class DefenserController : MonoBehaviour {
 					)
 				) {
 					if (rightHandHit.collider.tag == "Defenser") {
-						//						Debug.Log (rightHandHit.collider.name);
-						//						Debug.Log (getPosition (rightHandHit.point));
-						//						Debug.DrawLine (bones [i] [11].position, rightHandHit.point, Color.red, 60);
 						rightHandDistance = Vector3.Distance (rightHandHit.point, bones [i] [11].position);
 					}
 				}
@@ -245,18 +287,62 @@ public class DefenserController : MonoBehaviour {
 					hasHitPoint = true;
 				}
 			}
-
-//			if (min < defenseThreshold) {
-//				int jointsIndex = side == Direction.Left ? 7 : 11;
-//				Debug.Log ("close point: " + getPosition ( bones [lastIndex] [jointsIndex].position));
-//				Debug.Log ("The " + lastIndex + "th frame recorded in total " + bones.Count + " frames.");
-//				Debug.Log (side);
-//			}
 		}
 	}
 		
-	private void defenseStrategyAnalysis() {
-		
+	private void defenseStrategyAnalysis(Direction side, Direction height) {
+
+		Debug.Log (side.ToString () + ", " + height.ToString ());
+
+		if (
+			side == Direction.Middle &&
+			(height == Direction.Center || height == Direction.Upper)
+		) {
+			// use BlockMiddleHigh in frame lastIndex - 15 
+			anim.Play ("BlockMiddleHigh", 0);
+		} else if (
+			side == Direction.Middle &&
+			height == Direction.Lower
+		) {
+			// use BlockMiddleLow in frame lastIndex - 24
+			anim.Play ("BlockMiddleLow", 0);
+		} else if (
+			side == Direction.Left &&
+			height == Direction.Upper
+		) {
+			// use BlockLeftHigh/DodgeRight in frame lastIndex - 24/18	
+			anim.Play ("DodgeRight", 0);
+		}else if (
+			side == Direction.Left &&
+			height == Direction.Center
+		) {
+			//  use BlockLeftMiddle in frame lastIndex - 20
+			anim.Play ("BlockLeftMiddle", 0);
+		} else if (
+			side == Direction.Left &&
+			height == Direction.Lower
+		) {
+			// use BlockLeftLow in frame lastIndex - 24
+			anim.Play ("BlockLeftLow", 0);
+		} else if (
+			side == Direction.Right &&
+			height == Direction.Upper
+		) {
+			// use BlockRightHigh/DodgeLeft in frame lastIndex - 18
+			anim.Play ("DodgeLeft", 0);
+		}else if (
+			side == Direction.Right &&
+			height == Direction.Center
+		) {
+			// use BlockRightMiddle in frame lastIndex - 24
+			anim.Play ("BlockRightMiddle", 0);
+		} else if (
+			side == Direction.Right &&
+			height == Direction.Lower
+		) {
+			// use BlockRightLow in frame lastIndex - 30
+			anim.Play ("BlockRightLow", 0);
+		}
 	}
 
 	public void AddTagRecursively(Transform trans, string tag)
@@ -278,8 +364,8 @@ public class DefenserController : MonoBehaviour {
 				trans.rotation = joints [j].rotation;
 			}
 
-			Debug.Log (joints [5].rotation.eulerAngles);
-			Debug.Log (enemy.GetBoneTransform (boneIndex [5]).rotation.eulerAngles);
+//			Debug.Log (joints [5].rotation.eulerAngles);
+//			Debug.Log (enemy.GetBoneTransform (boneIndex [5]).rotation.eulerAngles);
 
 			yield return null;
 		}
