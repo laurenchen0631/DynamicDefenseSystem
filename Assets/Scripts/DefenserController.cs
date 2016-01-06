@@ -49,6 +49,8 @@ public class DefenserController : MonoBehaviour {
 
 	public bool isRecording = false;
 	public bool isReacting = false;
+	public bool isReplaying = false;
+	private bool isWaitingAttack = false;
 	public Button record;
 
 	public int numJoints = 18;
@@ -62,7 +64,11 @@ public class DefenserController : MonoBehaviour {
 	protected List<Joint[]> bones = new List<Joint[]>();
 	protected bool hasHitPoint = false;
 	protected Vector3 hitPoint;
+	protected int score = 0;
+	protected int prevScore = 0;
 
+	private int startDefense = 0;
+	private string defenseAction;
 
 	void Awake() {
 		if (numJoints > 18) {
@@ -76,6 +82,8 @@ public class DefenserController : MonoBehaviour {
 
 		AddTagRecursively (enemy.gameObject.transform, "Attacker");
 		AddTagRecursively (gameObject.transform, "Defenser");
+//		AddTagRecursively (anim.GetBoneTransform (boneIndex [4]).transform, "Defense");
+//		AddTagRecursively (anim.GetBoneTransform (boneIndex [8]).transform, "Defense");
 	}
 	
 	// Update is called once per frame
@@ -86,23 +94,37 @@ public class DefenserController : MonoBehaviour {
 				Transform tmp = enemy.GetBoneTransform (boneIndex [i]);
 				joints [i] = new Joint {
 					position = new Vector3 (tmp.position.x, tmp.position.y, tmp.position.z),
-					rotation = new Quaternion (tmp.rotation.x, tmp.rotation.y, tmp.rotation.z, tmp.rotation.w),
+					rotation = tmp.rotation,
+//					rotation = new Quaternion (tmp.rotation.x, tmp.rotation.y, tmp.rotation.z, tmp.rotation.w),
 				};
 			}
 			bones.Add (joints);
 		}
+
+		if (isWaitingAttack) {
+			if (startDefense == 0) {
+				isWaitingAttack = false;
+				anim.Play (defenseAction, 0);
+			} else {
+				--startDefense;
+			}
+		}
+
+//		Transform trans = enemy.GetBoneTransform (boneIndex [4]);
+//		trans.rotation = new Quaternion (0, 0, 0, 0);
 	}
 
 	void LateUpdate() {
 		if (isReacting) {
 			isReacting = false;
-		
 			StartCoroutine ("Playback");
 		}
 	}
 
 	void FixedUpdate() {
-		if (Input.GetKeyDown (KeyCode.R)) {
+		if (
+			Input.GetKeyDown (KeyCode.R)
+		) {
 			toggleRecord ();
 		}
 	}
@@ -114,6 +136,7 @@ public class DefenserController : MonoBehaviour {
 			textEle[0].text = "Record";
 
 			isRecording = false;
+			isReplaying = true;
 			startAnalysis ();
 		} else {
 			bones.Clear ();
@@ -133,18 +156,29 @@ public class DefenserController : MonoBehaviour {
 	void OnCollisionEnter(Collision hit) {
 		if (
 			hit.gameObject.tag == "Attacker" &&
-			hit.gameObject.GetComponentInParent<AttackerController>().isAttacking &&
+			(isRecording || isReplaying) &&
+//			hit.gameObject.GetComponentInParent<AttackerController>().isAttacking &&
 			! anim.GetCurrentAnimatorStateInfo(0).IsName("DAMAGED") 
 		) {
 			if (isRecording) {
-//				Debug.Log (hasHitPoint);
 				if (!hasHitPoint) {
 					hasHitPoint = true;
 					hitPoint = hit.contacts [0].point;
-//					Debug.Log (getPosition(hit.contacts [0].point));
 				}
-			} else {
-				anim.SetTrigger ("hit");
+			} else if (isReplaying) {
+
+				isReplaying = false;
+
+//				Debug.Log (LayerMask.LayerToName (hit.contacts [0].thisCollider.gameObject.layer));
+
+				if (hit.contacts [0].thisCollider.gameObject.layer == LayerMask.NameToLayer ("Defense")) {
+					Debug.Log ("NPC defend your attack!!!");
+				} else {
+					prevScore = score;
+					score++;
+					Debug.Log ("Player Score: " + score);
+					anim.SetTrigger ("hit");
+				}
 			}
 		}
 	}
@@ -179,6 +213,9 @@ public class DefenserController : MonoBehaviour {
 		Direction side = Direction.Middle;
 		Direction height = Direction.Center;
 
+		// if isAbove choose high 
+		// if isBelow choose low
+		// else choose middle
 		if (
 			firstPoint.y < -centerThreshold 
 		) {
@@ -189,6 +226,9 @@ public class DefenserController : MonoBehaviour {
 			height = Direction.Upper;
 		}
 
+		// if isRight choose right 
+		// if isLeft choose left
+		// else choose middle 
 		if (
 			firstPoint.x < -sideThreshold
 		) {
@@ -202,29 +242,11 @@ public class DefenserController : MonoBehaviour {
 		Debug.Log (getPosition (firstPoint));
 //		Debug.Log (side.ToString ());
 
-		defenseStrategyAnalysis (side, height);
-
-		// if isAbove choose high 
-		// if isBelow choose low
-		// else choose middle
-
-
-		// if isRight choose right 
-		// if isLeft choose left
-		// else choose middle 
-		
-//		Debug.Log (getPosition (firstPoint));
-//		Debug.Log (getPosition (middlePoint));
-//		Debug.Log (getPosition (lastPoint));
+		defenseStrategyAnalysis (side, height, lastIndex);
 
 //		Debug.DrawLine (defenseOrigin.position + firstPoint, defenseOrigin.position + middlePoint, Color.blue, 60f);
 		Debug.DrawLine (defenseOrigin.position + firstPoint, defenseOrigin.position + lastPoint, Color.blue, 60f);
 
-//		for (int i = 0; i < lastIndex; i++) {
-			
-//		}
-
-		// 3. Find the parts that will be attacked.
 
 	}
 
@@ -290,85 +312,110 @@ public class DefenserController : MonoBehaviour {
 		}
 	}
 		
-	private void defenseStrategyAnalysis(Direction side, Direction height) {
-
-		Debug.Log (side.ToString () + ", " + height.ToString ());
+	private void defenseStrategyAnalysis(Direction side, Direction height, int hitFrame) {
 
 		if (
 			side == Direction.Middle &&
 			(height == Direction.Center || height == Direction.Upper)
 		) {
 			// use BlockMiddleHigh in frame lastIndex - 15 
-			anim.Play ("BlockMiddleHigh", 0);
+			defenseAction = "BlockMiddleHigh";
+			startDefense = hitFrame - (15 * 2);
 		} else if (
 			side == Direction.Middle &&
 			height == Direction.Lower
 		) {
 			// use BlockMiddleLow in frame lastIndex - 24
-			anim.Play ("BlockMiddleLow", 0);
+			defenseAction = "BlockMiddleLow";
+			startDefense = hitFrame - (24 * 2);
+
 		} else if (
 			side == Direction.Left &&
 			height == Direction.Upper
 		) {
 			// use BlockLeftHigh/DodgeRight in frame lastIndex - 24/18	
-			anim.Play ("DodgeRight", 0);
+			defenseAction = "DodgeRight";
+			startDefense = hitFrame - (18 * 2);
+
 		}else if (
 			side == Direction.Left &&
 			height == Direction.Center
 		) {
 			//  use BlockLeftMiddle in frame lastIndex - 20
-			anim.Play ("BlockLeftMiddle", 0);
+			defenseAction = "BlockLeftMiddle";
+			startDefense = hitFrame - (20 * 2);
+
 		} else if (
 			side == Direction.Left &&
 			height == Direction.Lower
 		) {
 			// use BlockLeftLow in frame lastIndex - 24
-			anim.Play ("BlockLeftLow", 0);
+			defenseAction = "BlockLeftLow";
+			startDefense = hitFrame - (24 * 2);
 		} else if (
 			side == Direction.Right &&
 			height == Direction.Upper
 		) {
 			// use BlockRightHigh/DodgeLeft in frame lastIndex - 18
-			anim.Play ("DodgeLeft", 0);
+			defenseAction = "DodgeLeft";
+			startDefense = hitFrame - (18 * 2);
 		}else if (
 			side == Direction.Right &&
 			height == Direction.Center
 		) {
 			// use BlockRightMiddle in frame lastIndex - 24
-			anim.Play ("BlockRightMiddle", 0);
+			defenseAction = "BlockRightMiddle";
+			startDefense = hitFrame - (24 * 2);
 		} else if (
 			side == Direction.Right &&
 			height == Direction.Lower
 		) {
 			// use BlockRightLow in frame lastIndex - 30
-			anim.Play ("BlockRightLow", 0);
+			defenseAction = "BlockRightLow";
+			startDefense = hitFrame - (30 * 2);
 		}
+
+		isWaitingAttack = true;
+		if (startDefense < 0)
+			startDefense = 0;
+		StartCoroutine ("Playback");
+
 	}
 
 	public void AddTagRecursively(Transform trans, string tag)
 	{
 		trans.gameObject.tag = tag;
-		if(trans.childCount > 0) {
+		if (trans.childCount > 0) {
 			foreach(Transform t in trans) AddTagRecursively(t, tag);
 		}
 	}
 
 	IEnumerator Playback ()
 	{
-		foreach(Joint[] joints in bones) {
+		enemy.gameObject.GetComponent<AttackerController> ().resetAction ();
+		enemy.enabled = false;
+		enemy.gameObject.GetComponent<AttackerController> ().enabled = false;
+
+		Debug.Log (bones.Count);
+		for (int i = 0; i < bones.Count; i++) {
+			Joint[] joints = bones[i];
 			for (int j = 0; j < joints.Length; j++) {
 				Transform trans = enemy.GetBoneTransform (boneIndex [j]) ;
-				trans.rotation = new Quaternion ();
-
 				trans.position = joints [j].position;
 				trans.rotation = joints [j].rotation;
 			}
 
-//			Debug.Log (joints [5].rotation.eulerAngles);
-//			Debug.Log (enemy.GetBoneTransform (boneIndex [5]).rotation.eulerAngles);
 
-			yield return null;
+			yield return new WaitForEndOfFrame();
 		}
+
+		if (score == prevScore) {
+			Debug.Log ("Your didn't approach NPC XDD");
+		}
+
+		enemy.gameObject.GetComponent<AttackerController> ().enabled = true;
+		enemy.enabled = true;
+		isReplaying = false;
 
 	}
 

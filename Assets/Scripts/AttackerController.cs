@@ -34,9 +34,7 @@ public class AttackerController : MonoBehaviour {
 			anim.IsInTransition (0) &&
 			anim.GetNextAnimatorStateInfo (0).fullPathHash == Animator.StringToHash ("Base Layer.Idle")
 		) {
-			action.value = 0;
-			anim.SetInteger ("Action", 0);
-			isAttacking = false;
+			resetAction ();
 		}
 			
 		if (transform.position.y != 0f) {
@@ -126,5 +124,11 @@ public class AttackerController : MonoBehaviour {
 		} else if (action.value == 7) {
 			anim.SetInteger ("Action", 7);
 		}
+	}
+
+	public void resetAction() {
+		action.value = 0;
+		anim.SetInteger ("Action", 0);
+		isAttacking = false;
 	}
 }
